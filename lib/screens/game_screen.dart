@@ -1,6 +1,9 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:mondori/models/board.dart';
 import 'package:mondori/models/piece.dart';
+import 'package:mondori/screens/pie_rule_dialog.dart';
 import 'package:mondori/widgets/board_widget.dart';
 
 class GameScreen extends StatefulWidget {
@@ -10,17 +13,35 @@ class GameScreen extends StatefulWidget {
   State<GameScreen> createState() => _GameScreenState();
 }
 
-class _GameScreenState extends State<GameScreen> {
+class _GameScreenState extends State<GameScreen>
+    with SingleTickerProviderStateMixin {
   late Board board;
   late PlayerSide currentPlayer;
   Piece? selectedPiece;
   int moveCount = 0;
   String? lastAction;
+  bool pieModeResolved = false;
+  bool sidesSwitched = false;
+  late AnimationController _boardRotationController;
+  late Animation<double> _boardRotation;
 
   @override
   void initState() {
     super.initState();
     _initializeGame();
+    _boardRotationController = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+    _boardRotation = Tween<double>(begin: 0, end: math.pi).animate(
+      CurvedAnimation(parent: _boardRotationController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _boardRotationController.dispose();
+    super.dispose();
   }
 
   void _initializeGame() {
@@ -29,6 +50,9 @@ class _GameScreenState extends State<GameScreen> {
     selectedPiece = null;
     moveCount = 0;
     lastAction = null;
+    pieModeResolved = false;
+    sidesSwitched = false;
+    _boardRotationController.reset();
   }
 
   void _selectPiece(Piece piece) {
@@ -40,7 +64,7 @@ class _GameScreenState extends State<GameScreen> {
     }
   }
 
-  void _movePiece(Position newPosition) {
+  void _movePiece(Position newPosition) async {
     if (selectedPiece == null) return;
 
     // 移動可能かチェック
@@ -57,6 +81,9 @@ class _GameScreenState extends State<GameScreen> {
       _switchTurn();
       selectedPiece = null;
     });
+
+    // パイルールチェック
+    await _checkAndApplyPieRule();
   }
 
   void _capturePiece(Position targetPosition) {
@@ -106,6 +133,39 @@ class _GameScreenState extends State<GameScreen> {
 
   void _switchTurn() {
     currentPlayer = currentPlayer == PlayerSide.A ? PlayerSide.B : PlayerSide.A;
+  }
+
+  /// パイルールチェック: 初手後にダイアログを表示
+  Future<void> _checkAndApplyPieRule() async {
+    if (pieModeResolved) return;
+    if (moveCount != 1) return;
+
+    pieModeResolved = true;
+
+    // パイルールダイアログを表示
+    final switchSides = await showPieRuleDialog(context);
+
+    if (switchSides) {
+      // 陣営交換
+      setState(() {
+        sidesSwitched = true;
+        // プレイヤーを交換
+        currentPlayer = currentPlayer == PlayerSide.A ? PlayerSide.B : PlayerSide.A;
+        // 盤面をアニメーションで回転
+        _boardRotationController.forward();
+      });
+
+      // アニメーション完了後、メッセージ表示
+      await Future.delayed(const Duration(milliseconds: 600));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('陣営が交換されました！盤面が 180° 回転します。'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }
   }
 
   void _showGameOverDialog() {
@@ -223,28 +283,71 @@ class _GameScreenState extends State<GameScreen> {
               ),
               const SizedBox(height: 24),
 
-              // ゲーム盤
-              BoardWidget(
-                board: board,
-                selectedPiece: selectedPiece,
-                onPieceSelected: _selectPiece,
-                onPositionTapped: (position) {
-                  if (selectedPiece == null) return;
+              // パイルール情報
+              if (pieModeResolved)
+                Card(
+                  color: Colors.amber.shade50,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.info,
+                          color: Colors.amber.shade700,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            sidesSwitched
+                                ? '🍰 パイルール適用: 陣営が交換されました'
+                                : '🍰 パイルール: 交換なし',
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: Colors.amber.shade900,
+                                    ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              if (pieModeResolved) const SizedBox(height: 24),
 
-                  final targetPiece = board.getPieceAt(position);
-
-                  // 移動か奪取か教化かを判定
-                  if (targetPiece == null) {
-                    // 空マス：移動か教化
-                    _movePiece(position);
-                  } else if (targetPiece.side != selectedPiece!.side) {
-                    // 敵駒：奪取
-                    _capturePiece(position);
-                  } else if (targetPiece.seal == SealType.none) {
-                    // 自陣の無印駒：教化
-                    _convertPiece(position);
-                  }
+              // ゲーム盤（パイルール適用時は回転アニメーション）
+              AnimatedBuilder(
+                animation: _boardRotation,
+                builder: (context, child) {
+                  return Transform.rotate(
+                    angle: _boardRotation.value,
+                    child: child,
+                  );
                 },
+                child: BoardWidget(
+                  board: board,
+                  selectedPiece: selectedPiece,
+                  onPieceSelected: _selectPiece,
+                  onPositionTapped: (position) {
+                    if (selectedPiece == null) return;
+
+                    final targetPiece = board.getPieceAt(position);
+
+                    // 移動か奪取か教化かを判定
+                    if (targetPiece == null) {
+                      // 空マス：移動か教化
+                      _movePiece(position);
+                    } else if (targetPiece.side != selectedPiece!.side) {
+                      // 敵駒：奪取
+                      _capturePiece(position);
+                    } else if (targetPiece.seal == SealType.none) {
+                      // 自陣の無印駒：教化
+                      _convertPiece(position);
+                    }
+                  },
+                ),
               ),
               const SizedBox(height: 24),
 
