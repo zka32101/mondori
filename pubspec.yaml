@@ -1,0 +1,45 @@
+name: mondori
+description: "紋取り（もんどり） - A strategy board game with seal capture mechanics"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State management
+  riverpod: ^2.4.0
+  flutter_riverpod: ^2.4.0
+
+  # UI & Animation
+  animations: ^2.0.0
+
+  # Utilities
+  equatable: ^2.0.0
+  uuid: ^4.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+  riverpod_generator: ^2.3.0
+  build_runner: ^2.4.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/sounds/
+    - assets/rules/
+
+  fonts:
+    - family: NotoSansJP
+      fonts:
+        - asset: assets/fonts/NotoSansJP-Regular.ttf
+        - asset: assets/fonts/NotoSansJP-Bold.ttf
+          weight: 700
