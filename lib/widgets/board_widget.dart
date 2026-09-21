@@ -142,8 +142,21 @@ class _BoardWidgetState extends State<BoardWidget>
 
                             return GestureDetector(
                               onTap: () {
-                                if (piece != null &&
-                                    piece.seal != SealType.none) {
+                                // 有効な駒（無印以外）で、かつ「まだ何も選択していない」
+                                // か「自陣の別の駒を選び直す」場合のみ選択として扱う。
+                                // それ以外（空マス・無印駒・選択中に敵の有効駒をタップ）
+                                // は onPositionTapped に委譲し、移動/奪取/教化の判定は
+                                // 呼び出し側（各画面の onPositionTapped 実装）に任せる。
+                                // これにより敵駒への奪取アクションがタップで実行できる。
+                                final isSelectable =
+                                    piece != null && piece.seal != SealType.none;
+                                final isReselectingOwnPiece = isSelectable &&
+                                    widget.selectedPiece != null &&
+                                    piece.side == widget.selectedPiece!.side;
+
+                                if (isSelectable &&
+                                    (widget.selectedPiece == null ||
+                                        isReselectingOwnPiece)) {
                                   widget.onPieceSelected(piece);
                                 } else {
                                   widget.onPositionTapped(position);

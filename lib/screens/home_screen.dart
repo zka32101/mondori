@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mondori/screens/game_mode_screen.dart';
+import 'package:mondori/screens/statistics_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -87,6 +88,20 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ),
                 child: const Text('詳細ルール'),
+              ),
+              const SizedBox(height: 16),
+
+              // 統計・履歴ボタン
+              TextButton.icon(
+                icon: const Icon(Icons.bar_chart),
+                label: const Text('統計・履歴'),
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const StatisticsScreen(),
+                    ),
+                  );
+                },
               ),
             ],
           ),

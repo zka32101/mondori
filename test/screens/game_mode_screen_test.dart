@@ -83,7 +83,7 @@ void main() {
       expect(find.byType(GameScreen), findsOneWidget);
     });
 
-    testWidgets('AI対戦をタップするとSnackBarが表示される',
+    testWidgets('AI対戦をタップすると難度選択ダイアログが表示される',
         (WidgetTester tester) async {
       await tester.pumpWidget(_createTestWidget());
       await tester.pumpAndSettle();
@@ -92,9 +92,12 @@ void main() {
       await tester.tap(find.text('AI対戦'));
       await tester.pumpAndSettle();
 
-      // SnackBar が表示される
-      expect(find.text('AI対戦は今後のバージョンで実装予定です'),
-          findsOneWidget);
+      // 難度選択ダイアログが表示される
+      expect(find.text('難度選択'), findsOneWidget);
+      expect(find.text('Easy'), findsOneWidget);
+      expect(find.text('Normal'), findsOneWidget);
+      expect(find.text('Hard'), findsOneWidget);
+      expect(find.text('Expert'), findsOneWidget);
     });
 
     testWidgets('オンライン対戦をタップするとSnackBarが表示される',
@@ -106,9 +109,11 @@ void main() {
       await tester.tap(find.text('オンライン対戦'));
       await tester.pumpAndSettle();
 
-      // SnackBar が表示される
-      expect(find.text('オンライン対戦は今後のバージョンで実装予定です'),
-          findsOneWidget);
+      // SnackBar が表示される（Firebase 未接続のため準備中である旨）
+      expect(
+        find.textContaining('Firebase プロジェクトの接続設定が必要です'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('モードカードがスクロール可能である',

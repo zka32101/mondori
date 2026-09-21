@@ -97,6 +97,9 @@ class AIEvaluator {
   }
 
   /// 脅威スコアを計算（敵駒への直接的な脅威）
+  ///
+  /// 奪取は刻印の移動パターンではなく8方向の隣接マスが対象のため、
+  /// [Position.getAdjacentPositions] を基準に判定する。
   int _calculateThreatScore(Board board, PlayerSide side) {
     int threatCount = 0;
     final pieces = board.getPiecesBySide(side);
@@ -105,9 +108,7 @@ class AIEvaluator {
     for (final piece in pieces) {
       if (piece.seal == SealType.none) continue;
 
-      final movablePositions = piece.getMovablePositions();
-
-      for (final pos in movablePositions) {
+      for (final pos in piece.position.getAdjacentPositions()) {
         final targetPiece = board.getPieceAt(pos);
         if (targetPiece != null && targetPiece.side == opponent &&
             targetPiece.seal != SealType.none) {
@@ -119,7 +120,10 @@ class AIEvaluator {
     return threatCount * threatScore;
   }
 
-  /// 防御スコアを計算（守られている駒の数）
+  /// 防御スコアを計算（守られている＝隣接する味方がいる駒の数）
+  ///
+  /// 奪取された駒はその場で無印化されるため、隣接する味方はすぐに教化で
+  /// 取り返せる。この「取り返せる」関係も隣接判定で表す。
   int _calculateDefenseScore(Board board, PlayerSide side) {
     int defendedCount = 0;
     final pieces = board.getPiecesBySide(side);
@@ -133,8 +137,7 @@ class AIEvaluator {
           continue;
         }
 
-        final otherMovablePositions = otherPiece.getMovablePositions();
-        if (otherMovablePositions.contains(piece.position)) {
+        if (otherPiece.position.getAdjacentPositions().contains(piece.position)) {
           defendedCount++;
           break;
         }
@@ -144,7 +147,7 @@ class AIEvaluator {
     return defendedCount * defenseScore;
   }
 
-  /// 王の安全性を評価
+  /// 王の安全性を評価（隣接する敵駒＝次の一手で奪取され得る数）
   int _evaluateKingSafety(Board board, PlayerSide side, Piece? king) {
     if (king == null || king.seal == SealType.none) {
       return -kingThreatenedScore;
@@ -154,13 +157,12 @@ class AIEvaluator {
     final opponent = _getOpponent(side);
     final opponentPieces = board.getPiecesBySide(opponent);
 
-    // 王に隣接する敵駒の数をチェック
+    // 王に隣接する敵駒の数をチェック（奪取は隣接判定のため）
     int threatCount = 0;
     for (final piece in opponentPieces) {
       if (piece.seal == SealType.none) continue;
 
-      final movablePositions = piece.getMovablePositions();
-      if (movablePositions.contains(king.position)) {
+      if (piece.position.getAdjacentPositions().contains(king.position)) {
         threatCount++;
       }
     }

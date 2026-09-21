@@ -27,6 +27,9 @@ dependencies:
   firebase_database: ^10.4.0
   firebase_auth: ^4.15.0
 
+  # Statistics & history persistence (Phase 2C)
+  shared_preferences: ^2.2.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

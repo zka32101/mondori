@@ -2,9 +2,12 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:mondori/models/board.dart';
+import 'package:mondori/models/game_statistics.dart';
 import 'package:mondori/models/piece.dart';
 import 'package:mondori/screens/pie_rule_dialog.dart';
+import 'package:mondori/services/statistics_service.dart';
 import 'package:mondori/widgets/board_widget.dart';
+import 'package:uuid/uuid.dart';
 
 class GameScreen extends StatefulWidget {
   const GameScreen({Key? key}) : super(key: key);
@@ -24,11 +27,15 @@ class _GameScreenState extends State<GameScreen>
   bool sidesSwitched = false;
   late AnimationController _boardRotationController;
   late Animation<double> _boardRotation;
+  final _statisticsService = StatisticsService();
+  final _uuid = const Uuid();
+  DateTime _startedAt = DateTime.now();
 
   @override
   void initState() {
     super.initState();
-    _initializeGame();
+    // _initializeGame() は _boardRotationController.reset() を呼ぶため、
+    // 必ずコントローラ構築後に呼び出す（逆順だと LateInitializationError）。
     _boardRotationController = AnimationController(
       duration: const Duration(milliseconds: 600),
       vsync: this,
@@ -36,6 +43,7 @@ class _GameScreenState extends State<GameScreen>
     _boardRotation = Tween<double>(begin: 0, end: math.pi).animate(
       CurvedAnimation(parent: _boardRotationController, curve: Curves.easeInOut),
     );
+    _initializeGame();
   }
 
   @override
@@ -52,7 +60,25 @@ class _GameScreenState extends State<GameScreen>
     lastAction = null;
     pieModeResolved = false;
     sidesSwitched = false;
+    _startedAt = DateTime.now();
     _boardRotationController.reset();
+  }
+
+  /// ホットシート対戦の結果を統計に記録
+  ///
+  /// 両陣営とも同一端末のプレイヤーのため humanSide は null とし、
+  /// 個人成績の集計対象からは除外する（履歴・リプレイの閲覧対象にはなる）。
+  void _recordGameResult(PlayerSide winnerSide) {
+    final stats = GameStatistics(
+      gameId: _uuid.v4(),
+      mode: GameMode.hotSeat,
+      winner: winnerSide,
+      turnCount: moveCount,
+      duration: DateTime.now().difference(_startedAt),
+      playedAt: DateTime.now(),
+      moveHistory: const [],
+    );
+    _statisticsService.recordGameResult(stats);
   }
 
   void _selectPiece(Piece piece) {
@@ -90,13 +116,19 @@ class _GameScreenState extends State<GameScreen>
     if (selectedPiece == null) return;
 
     final targetPiece = board.getPieceAt(targetPosition);
-    if (targetPiece == null || targetPiece.side == selectedPiece!.side) return;
+    if (targetPiece == null ||
+        targetPiece.side == selectedPiece!.side ||
+        targetPiece.seal == SealType.none) {
+      // 無印駒（既に奪取済みの敵駒）は奪取対象にならない
+      return;
+    }
 
     // 隣接しているか確認
     final adjacent = selectedPiece!.position.getAdjacentPositions();
     if (!adjacent.contains(targetPosition)) return;
 
     final isKingCapture = targetPiece.seal == SealType.king;
+    final capturingSide = selectedPiece!.side;
 
     setState(() {
       board = board.capturePiece(selectedPiece!, targetPiece);
@@ -106,9 +138,10 @@ class _GameScreenState extends State<GameScreen>
       selectedPiece = null;
     });
 
-    // 敵の王が奪取されたか確認
+    // 敵の王が奪取されたか確認（勝者は駒を奪取した側であり、手番交代後の
+    // currentPlayer ではない点に注意）
     if (isKingCapture) {
-      _showGameOverDialog();
+      _showGameOverDialog(capturingSide);
     }
   }
 
@@ -168,8 +201,10 @@ class _GameScreenState extends State<GameScreen>
     }
   }
 
-  void _showGameOverDialog() {
-    final winner = currentPlayer == PlayerSide.A ? 'A' : 'B';
+  void _showGameOverDialog(PlayerSide winnerSide) {
+    _recordGameResult(winnerSide);
+
+    final winner = winnerSide == PlayerSide.A ? 'A' : 'B';
     showDialog(
       context: context,
       builder: (context) => AlertDialog(

@@ -1,9 +1,107 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mondori/ai/ai_engine.dart';
 import 'package:mondori/models/board.dart';
+import 'package:mondori/models/move.dart';
 import 'package:mondori/models/piece.dart';
 
 void main() {
+  group('AIEngine - Capture/Convert use adjacency, not movement pattern', () {
+    test('advance piece can capture an adjacent enemy behind it', () {
+      // 「進」は前方1マスにしか移動できないが、奪取は隣接8方向すべてが対象。
+      // c3(A, 進) の後方(下)である c2 に敵駒がいても奪取できるはず。
+      final board = Board(pieces: {
+        Position(column: 'c', row: 3): Piece(
+          id: 'A-advance',
+          side: PlayerSide.A,
+          seal: SealType.advance,
+          position: Position(column: 'c', row: 3),
+        ),
+        Position(column: 'c', row: 2): Piece(
+          id: 'B-behind',
+          side: PlayerSide.B,
+          seal: SealType.counter,
+          position: Position(column: 'c', row: 2),
+        ),
+      });
+
+      final engine = AIEngine(difficulty: AIDifficulty.normal);
+      final moves = engine.generateMovesPublic(board, PlayerSide.A);
+
+      final captureMoves = moves.where((m) => m.type == MoveType.capture).toList();
+      expect(captureMoves.length, 1);
+      expect(captureMoves.first.toPosition, Position(column: 'c', row: 2));
+
+      // 移動パターン上は c2 に到達できないことも確認（回帰防止）
+      final advancePiece = board.getPieceAt(Position(column: 'c', row: 3))!;
+      expect(
+        advancePiece.getMovablePositions().contains(Position(column: 'c', row: 2)),
+        false,
+      );
+    });
+
+    test('Capture does not relocate the capturing piece', () {
+      final board = Board(pieces: {
+        Position(column: 'c', row: 3): Piece(
+          id: 'A-advance',
+          side: PlayerSide.A,
+          seal: SealType.advance,
+          position: Position(column: 'c', row: 3),
+        ),
+        Position(column: 'c', row: 2): Piece(
+          id: 'B-behind',
+          side: PlayerSide.B,
+          seal: SealType.counter,
+          position: Position(column: 'c', row: 2),
+        ),
+      });
+
+      final engine = AIEngine(difficulty: AIDifficulty.normal);
+      final moves = engine.generateMovesPublic(board, PlayerSide.A);
+      final captureMove = moves.firstWhere((m) => m.type == MoveType.capture);
+
+      final newBoard = engine.applyMovePublic(board, captureMove);
+
+      // 奪取した駒は元の位置(c3)に留まり、刻印だけが変化する
+      final attacker = newBoard.getPieceAt(Position(column: 'c', row: 3));
+      expect(attacker, isNotNull);
+      expect(attacker!.seal, SealType.counter);
+
+      // 奪われた駒は元の位置(c2)で無印駒として残る
+      final defeated = newBoard.getPieceAt(Position(column: 'c', row: 2));
+      expect(defeated, isNotNull);
+      expect(defeated!.seal, SealType.none);
+      expect(defeated.side, PlayerSide.B);
+    });
+
+    test('Generates a convert move for an adjacent friendly none piece', () {
+      final board = Board(pieces: {
+        Position(column: 'c', row: 3): Piece(
+          id: 'A-swift',
+          side: PlayerSide.A,
+          seal: SealType.swift,
+          position: Position(column: 'c', row: 3),
+        ),
+        Position(column: 'd', row: 3): Piece(
+          id: 'A-none',
+          side: PlayerSide.A,
+          seal: SealType.none,
+          position: Position(column: 'd', row: 3),
+        ),
+      });
+
+      final engine = AIEngine(difficulty: AIDifficulty.normal);
+      final moves = engine.generateMovesPublic(board, PlayerSide.A);
+
+      final convertMoves = moves.where((m) => m.type == MoveType.convert).toList();
+      expect(convertMoves.length, 1);
+      expect(convertMoves.first.toPosition, Position(column: 'd', row: 3));
+
+      final newBoard = engine.applyMovePublic(board, convertMoves.first);
+      final converted = newBoard.getPieceAt(Position(column: 'd', row: 3));
+      expect(converted!.seal, SealType.swift);
+    });
+  });
+
   group('AIEngine - Move Generation', () {
     test('Generate valid moves for all piece types', () {
       final board = Board.initialPlacement1();

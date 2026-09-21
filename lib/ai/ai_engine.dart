@@ -110,7 +110,12 @@ class AIEngine {
     return _generateMoves(board, side);
   }
 
-  /// ボード上で可能なすべての移動を生成
+  /// ボード上で可能なすべての手（移動・奪取・教化）を生成
+  ///
+  /// 「移動」は刻印の移動パターン（[Piece.getMovablePositions]）に従うが、
+  /// 「奪取」「教化」は移動を伴わないため、8方向の隣接マス
+  /// （[Position.getAdjacentPositions]）を基準とする。この2つを混同すると、
+  /// 例えば「進」駒が前方以外の隣接する敵駒を奪取できなくなってしまう。
   List<Move> _generateMoves(Board board, PlayerSide side) {
     final moves = <Move>[];
     final pieces = board.getPiecesBySide(side);
@@ -118,25 +123,38 @@ class AIEngine {
     for (final piece in pieces) {
       if (piece.seal == SealType.none) continue;
 
-      final movablePositions = piece.getMovablePositions();
-
-      for (final toPos in movablePositions) {
-        final targetPiece = board.getPieceAt(toPos);
-
-        // 空いているマスへの移動
-        if (targetPiece == null) {
+      // 移動：刻印パターン上の空マスへ
+      for (final toPos in piece.getMovablePositions()) {
+        if (board.getPieceAt(toPos) == null) {
           moves.add(Move(
             piece: piece,
             fromPosition: piece.position,
             toPosition: toPos,
+            type: MoveType.move,
           ));
         }
-        // 敵駒への移動（刻印奪取）
-        else if (targetPiece.side != side && targetPiece.seal != SealType.none) {
+      }
+
+      // 奪取・教化：8方向の隣接マスへ（移動を伴わない）
+      for (final toPos in piece.position.getAdjacentPositions()) {
+        final targetPiece = board.getPieceAt(toPos);
+        if (targetPiece == null) continue;
+
+        if (targetPiece.side != side && targetPiece.seal != SealType.none) {
+          // 敵の有効駒：奪取
           moves.add(Move(
             piece: piece,
             fromPosition: piece.position,
             toPosition: toPos,
+            type: MoveType.capture,
+          ));
+        } else if (targetPiece.side == side && targetPiece.seal == SealType.none) {
+          // 自陣の無印駒：教化
+          moves.add(Move(
+            piece: piece,
+            fromPosition: piece.position,
+            toPosition: toPos,
+            type: MoveType.convert,
           ));
         }
       }
@@ -153,19 +171,20 @@ class AIEngine {
   /// Evaluator へのアクセス（テスト用）
   AIEvaluator get evaluatorPublic => evaluator;
 
-  /// 移動をボードに適用
+  /// 手をボードに適用
   Board _applyMove(Board board, Move move) {
-    final targetPiece = board.getPieceAt(move.toPosition);
-
-    if (targetPiece == null || targetPiece.seal == SealType.none) {
-      // 通常の移動
-      return board.movePiece(move.piece, move.toPosition);
-    } else if (targetPiece.side != move.piece.side) {
-      // 敵駒への移動（刻印奪取）
-      return board.capturePiece(move.piece, targetPiece);
+    switch (move.type) {
+      case MoveType.move:
+        return board.movePiece(move.piece, move.toPosition);
+      case MoveType.capture:
+        final targetPiece = board.getPieceAt(move.toPosition);
+        if (targetPiece == null) return board;
+        return board.capturePiece(move.piece, targetPiece);
+      case MoveType.convert:
+        final targetPiece = board.getPieceAt(move.toPosition);
+        if (targetPiece == null) return board;
+        return board.convertPiece(move.piece, targetPiece);
     }
-
-    return board;
   }
 
   /// 対戦相手を取得
