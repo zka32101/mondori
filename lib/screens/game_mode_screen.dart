@@ -1,9 +1,39 @@
 import 'package:flutter/material.dart';
+import 'package:mondori/ai/ai_engine.dart';
+import 'package:mondori/screens/ai_game_screen.dart';
 import 'package:mondori/screens/game_screen.dart';
 
 /// ゲームモード選択画面
 class GameModeScreen extends StatelessWidget {
   const GameModeScreen({Key? key}) : super(key: key);
+
+  void _showDifficultySelection(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('難度選択'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final difficulty in AIDifficulty.values)
+              ListTile(
+                title: Text(difficulty.label),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => AIGameScreen(
+                        difficulty: difficulty,
+                      ),
+                    ),
+                  );
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,18 +72,13 @@ class GameModeScreen extends StatelessWidget {
               ),
               const SizedBox(height: 24),
 
-              // AI対戦（将来版）
+              // AI対戦
               _GameModeCard(
                 icon: Icons.android,
                 title: 'AI対戦',
                 description: 'コンピュータ相手にプレイします',
-                isComingSoon: true,
                 onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('AI対戦は今後のバージョンで実装予定です'),
-                    ),
-                  );
+                  _showDifficultySelection(context);
                 },
               ),
               const SizedBox(height: 24),
