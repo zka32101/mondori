@@ -117,6 +117,42 @@ class Board extends Equatable {
     return Board(pieces: newPieces);
   }
 
+  /// ボードの複製（一部フィールド上書き）
+  Board copyWith({Map<Position, Piece>? pieces}) {
+    return Board(pieces: pieces ?? this.pieces);
+  }
+
+  /// JSON へのシリアライズ（オンライン対戦用）
+  Map<String, dynamic> toJson() {
+    return {
+      'pieces': pieces.entries
+          .map((e) => {
+                'position': e.key.toJson(),
+                'piece': e.value.toJson(),
+              })
+          .toList(),
+    };
+  }
+
+  /// JSON からの復元
+  factory Board.fromJson(Map<String, dynamic> json) {
+    final pieces = <Position, Piece>{};
+    final list = json['pieces'] as List<dynamic>;
+
+    for (final entry in list) {
+      final map = Map<String, dynamic>.from(entry as Map);
+      final position = Position.fromJson(
+        Map<String, dynamic>.from(map['position'] as Map),
+      );
+      final piece = Piece.fromJson(
+        Map<String, dynamic>.from(map['piece'] as Map),
+      );
+      pieces[position] = piece;
+    }
+
+    return Board(pieces: pieces);
+  }
+
   @override
   List<Object?> get props => [pieces];
 }

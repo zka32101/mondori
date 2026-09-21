@@ -411,5 +411,35 @@ void main() {
         expect(piece1 == piece2, false);
       });
     });
+
+    group('Serialization (オンライン対戦用)', () {
+      test('Position の JSON 変換と復元', () {
+        final position = Position(column: 'd', row: 4);
+        final restored = Position.fromJson(position.toJson());
+        expect(restored, position);
+      });
+
+      test('Piece の JSON 変換と復元', () {
+        final piece = Piece(
+          id: 'test-piece',
+          side: PlayerSide.B,
+          seal: SealType.swift,
+          position: Position(column: 'e', row: 5),
+        );
+        final restored = Piece.fromJson(piece.toJson());
+        expect(restored, piece);
+      });
+
+      test('無印駒も正確にシリアライズされる', () {
+        final piece = Piece(
+          id: 'captured-piece',
+          side: PlayerSide.A,
+          seal: SealType.none,
+          position: Position(column: 'a', row: 1),
+        );
+        final restored = Piece.fromJson(piece.toJson());
+        expect(restored.seal, SealType.none);
+      });
+    });
   });
 }

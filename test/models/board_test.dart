@@ -329,5 +329,34 @@ void main() {
         expect(board1 == board2, false);
       });
     });
+
+    group('Serialization (オンライン対戦用)', () {
+      test('JSON への変換と復元で盤状態が保持される', () {
+        final board = Board.initialPlacement1();
+        final json = board.toJson();
+        final restored = Board.fromJson(json);
+
+        expect(restored, board);
+        expect(restored.pieces.length, board.pieces.length);
+      });
+
+      test('駒移動後もシリアライズが正確', () {
+        final board = Board.initialPlacement1();
+        final piece = board.getPieceAt(Position(column: 'a', row: 1))!;
+        final moved = board.movePiece(piece, Position(column: 'a', row: 2));
+
+        final restored = Board.fromJson(moved.toJson());
+        expect(restored, moved);
+      });
+
+      test('copyWith はピースマップを上書きする', () {
+        final board = Board.initialPlacement1();
+        final newPieces = <Position, Piece>{};
+        final copy = board.copyWith(pieces: newPieces);
+
+        expect(copy.pieces, isEmpty);
+        expect(board.pieces, isNotEmpty);
+      });
+    });
   });
 }

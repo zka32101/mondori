@@ -118,21 +118,15 @@ void main() {
 
       // Create a scenario where human king is captured
       final humanKing = state.board.getKingPiece(state.humanPlayer);
-      if (humanKing != null) {
-        // Simulate king capture by making it none
-        final newPieces = Map<dynamic, dynamic>.from(state.board.pieces);
-        newPieces[humanKing.position] =
-            humanKing.asNonePiece();
+      expect(humanKing, isNotNull);
 
-        state = state.copyWith(
-          board: state.board.copyWith(pieces: newPieces),
-        );
+      final newBoard = state.board.movePiece(
+        humanKing!.asNonePiece(),
+        humanKing.position,
+      );
 
-        // Check if game over is detected
-        if (state._isGameOver) {
-          expect(state.gameOver || state._isGameOver, true);
-        }
-      }
+      // 王が奪取された盤面では、王刻印の駒が存在しなくなる
+      expect(newBoard.getKingPiece(state.humanPlayer), isNull);
     });
   });
 
@@ -217,47 +211,4 @@ void main() {
       expect(state.aiPlayer, isNotNull);
     });
   });
-}
-
-extension on AIGameState {
-  AIGameState copyWith({
-    dynamic board,
-    dynamic currentPlayer,
-    dynamic humanPlayer,
-    dynamic aiPlayer,
-    dynamic difficulty,
-    int? moveCount,
-    String? lastAction,
-    bool? isAIThinking,
-    bool? gameOver,
-    dynamic winner,
-  }) {
-    return AIGameState(
-      board: board ?? this.board,
-      currentPlayer: currentPlayer ?? this.currentPlayer,
-      humanPlayer: humanPlayer ?? this.humanPlayer,
-      aiPlayer: aiPlayer ?? this.aiPlayer,
-      difficulty: difficulty ?? this.difficulty,
-      moveCount: moveCount ?? this.moveCount,
-      lastAction: lastAction ?? this.lastAction,
-      isAIThinking: isAIThinking ?? this.isAIThinking,
-      gameOver: gameOver ?? this.gameOver,
-      winner: winner ?? this.winner,
-    );
-  }
-
-  bool get _isGameOver {
-    // Copy of the logic from AIGameState
-    final humanKing = board.getKingPiece(humanPlayer);
-    final aiKing = board.getKingPiece(aiPlayer);
-
-    if (humanKing == null || humanKing.seal == SealType.none) {
-      return true;
-    }
-    if (aiKing == null || aiKing.seal == SealType.none) {
-      return true;
-    }
-
-    return false;
-  }
 }

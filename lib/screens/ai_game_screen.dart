@@ -6,7 +6,7 @@ import 'package:mondori/providers/ai_game_provider.dart';
 import 'package:mondori/widgets/board_widget.dart';
 
 /// AI 対戦ゲーム画面
-class AIGameScreen extends StatefulWidget {
+class AIGameScreen extends ConsumerStatefulWidget {
   final AIDifficulty difficulty;
   final PlayerSide? humanPlayer;
 
@@ -17,20 +17,28 @@ class AIGameScreen extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<AIGameScreen> createState() => _AIGameScreenState();
+  ConsumerState<AIGameScreen> createState() => _AIGameScreenState();
 }
 
-class _AIGameScreenState extends State<AIGameScreen> {
+class _AIGameScreenState extends ConsumerState<AIGameScreen> {
   Piece? selectedPiece;
 
   @override
   void initState() {
     super.initState();
-    // 初期化は initState で行わずに、didChangeDependencies で行う
+    // ゲーム状態は最初のフレーム後に一度だけ初期化する
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(aiGameStateProvider.notifier).initGame(
+            widget.difficulty,
+            humanPlayer: widget.humanPlayer ?? PlayerSide.A,
+          );
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    final gameState = ref.watch(aiGameStateProvider);
+
     return Scaffold(
       appBar: AppBar(
         title: Text('AI対戦 (${widget.difficulty.label})'),
@@ -39,32 +47,20 @@ class _AIGameScreenState extends State<AIGameScreen> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: Consumer(
-        builder: (context, ref, child) {
-          // ゲーム状態を初期化
-          ref.read(aiGameStateProvider.notifier).initGame(
-            widget.difficulty,
-            humanPlayer: widget.humanPlayer ?? PlayerSide.A,
-          );
+      body: Column(
+        children: [
+          // 統計情報パネル
+          _buildStatsPanel(gameState),
 
-          final gameState = ref.watch(aiGameStateProvider);
-
-          return Column(
-            children: [
-              // 統計情報パネル
-              _buildStatsPanel(gameState),
-
-              // ゲームボード
-              Expanded(
-                child: Center(
-                  child: gameState.gameOver
-                      ? _buildGameOverScreen(gameState)
-                      : _buildGameBoard(context, ref, gameState),
-                ),
-              ),
-            ],
-          );
-        },
+          // ゲームボード
+          Expanded(
+            child: Center(
+              child: gameState.gameOver
+                  ? _buildGameOverScreen(gameState)
+                  : _buildGameBoard(gameState),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -113,7 +109,7 @@ class _AIGameScreenState extends State<AIGameScreen> {
   }
 
   /// ゲームボード
-  Widget _buildGameBoard(BuildContext context, WidgetRef ref, AIGameState gameState) {
+  Widget _buildGameBoard(AIGameState gameState) {
     return GestureDetector(
       onTap: () {
         setState(() {
@@ -130,30 +126,28 @@ class _AIGameScreenState extends State<AIGameScreen> {
               child: BoardWidget(
                 board: gameState.board,
                 selectedPiece: selectedPiece,
-                onPieceTap: gameState.isHumanTurn && !gameState.isAIThinking
-                    ? (piece) {
-                        if (piece.side == gameState.humanPlayer &&
-                            piece.seal != SealType.none) {
-                          setState(() {
-                            selectedPiece =
-                                selectedPiece?.id == piece.id ? null : piece;
-                          });
-                        }
-                      }
-                    : null,
-                onPositionTap: gameState.isHumanTurn && !gameState.isAIThinking
-                    ? (position) {
-                        if (selectedPiece != null &&
-                            selectedPiece!.side == gameState.humanPlayer) {
-                          ref
-                              .read(aiGameStateProvider.notifier)
-                              .makeHumanMove(selectedPiece!, position);
-                          setState(() {
-                            selectedPiece = null;
-                          });
-                        }
-                      }
-                    : null,
+                onPieceSelected: (piece) {
+                  if (!gameState.isHumanTurn || gameState.isAIThinking) return;
+                  if (piece.side == gameState.humanPlayer &&
+                      piece.seal != SealType.none) {
+                    setState(() {
+                      selectedPiece =
+                          selectedPiece?.id == piece.id ? null : piece;
+                    });
+                  }
+                },
+                onPositionTapped: (position) {
+                  if (!gameState.isHumanTurn || gameState.isAIThinking) return;
+                  if (selectedPiece != null &&
+                      selectedPiece!.side == gameState.humanPlayer) {
+                    ref
+                        .read(aiGameStateProvider.notifier)
+                        .makeHumanMove(selectedPiece!, position);
+                    setState(() {
+                      selectedPiece = null;
+                    });
+                  }
+                },
               ),
             ),
             const SizedBox(height: 24),
@@ -202,7 +196,7 @@ class _AIGameScreenState extends State<AIGameScreen> {
           const SizedBox(height: 32),
           ElevatedButton(
             onPressed: () {
-              context.read(aiGameStateProvider.notifier).resetGame();
+              ref.read(aiGameStateProvider.notifier).resetGame();
               setState(() {
                 selectedPiece = null;
               });

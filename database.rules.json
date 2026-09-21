@@ -1,0 +1,17 @@
+{
+  "rules": {
+    "sessions": {
+      "$sessionId": {
+        ".read": "auth != null && data.child('playerIds').val() != null",
+        ".write": "auth != null",
+        ".validate": "newData.hasChildren(['id', 'playerIds', 'currentPlayer', 'status', 'moveCount', 'createdAt', 'updatedAt'])"
+      }
+    },
+    "matchmaking_queue": {
+      "$uid": {
+        ".read": "auth != null",
+        ".write": "auth != null && auth.uid == $uid"
+      }
+    }
+  }
+}

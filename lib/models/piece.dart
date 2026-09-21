@@ -63,6 +63,15 @@ class Position extends Equatable {
 
   @override
   String toString() => '$column$row';
+
+  /// JSON へのシリアライズ
+  Map<String, dynamic> toJson() => {'column': column, 'row': row};
+
+  /// JSON からの復元
+  factory Position.fromJson(Map<String, dynamic> json) => Position(
+        column: json['column'] as String,
+        row: json['row'] as int,
+      );
 }
 
 /// 盤上の駒
@@ -175,4 +184,22 @@ class Piece extends Equatable {
 
   @override
   String toString() => 'Piece($id, $side, $seal, $position)';
+
+  /// JSON へのシリアライズ（オンライン対戦用）
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'side': side.name,
+        'seal': seal.name,
+        'position': position.toJson(),
+      };
+
+  /// JSON からの復元
+  factory Piece.fromJson(Map<String, dynamic> json) => Piece(
+        id: json['id'] as String,
+        side: PlayerSide.values.byName(json['side'] as String),
+        seal: SealType.values.byName(json['seal'] as String),
+        position: Position.fromJson(
+          Map<String, dynamic>.from(json['position'] as Map),
+        ),
+      );
 }

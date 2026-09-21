@@ -83,7 +83,7 @@ class GameModeScreen extends StatelessWidget {
               ),
               const SizedBox(height: 24),
 
-              // オンライン対戦（将来版）
+              // オンライン対戦（Firebase プロジェクト接続待ち）
               _GameModeCard(
                 icon: Icons.cloud,
                 title: 'オンライン対戦',
@@ -92,7 +92,10 @@ class GameModeScreen extends StatelessWidget {
                 onTap: () {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text('オンライン対戦は今後のバージョンで実装予定です'),
+                      content: Text(
+                        'オンライン対戦の実装は完了していますが、'
+                        'Firebase プロジェクトの接続設定が必要です',
+                      ),
                     ),
                   );
                 },

@@ -97,7 +97,7 @@ final aiGameStateProvider =
 
 /// AI ゲーム状態ノーティファイア
 class AIGameNotifier extends StateNotifier<AIGameState> {
-  late final AIEngine _aiEngine;
+  AIEngine _aiEngine;
 
   AIGameNotifier() : super(AIGameState.initial(AIDifficulty.normal)) {
     _aiEngine = AIEngine(difficulty: state.difficulty);
