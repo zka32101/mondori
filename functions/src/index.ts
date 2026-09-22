@@ -17,6 +17,7 @@ interface GameSession {
   moveCount: number;
   createdAt: number;
   updatedAt: number;
+  moveHistory?: unknown[];
 }
 
 function requireAuth(context: functions.https.CallableContext): string {
@@ -140,6 +141,9 @@ export const submitMove = functions.https.onCall(async (data, context) => {
   const sessionId = data.sessionId as string;
   const board = data.board;
   const nextPlayer = data.nextPlayer as PlayerSide;
+  // クライアント側 (OnlineGameService.submitMove) と同様、この手を反映した
+  // 後の完全な指し手履歴を渡す想定（既存履歴 + 今回の手）。リプレイに使う。
+  const moveHistory = data.moveHistory;
 
   if (!sessionId || !board || !nextPlayer) {
     throw new functions.https.HttpsError('invalid-argument', '必須パラメータが不足しています');
@@ -166,6 +170,7 @@ export const submitMove = functions.https.onCall(async (data, context) => {
     board,
     currentPlayer: nextPlayer,
     moveCount: session.moveCount + 1,
+    ...(moveHistory ? { moveHistory } : {}),
     updatedAt: admin.database.ServerValue.TIMESTAMP,
   });
 

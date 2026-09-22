@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mondori/models/game_session.dart';
+import 'package:mondori/models/move.dart';
 import 'package:mondori/models/piece.dart';
 
 void main() {
@@ -13,6 +14,7 @@ void main() {
       expect(session.currentPlayer, PlayerSide.A);
       expect(session.moveCount, 0);
       expect(session.isFull, false);
+      expect(session.moveHistory, isEmpty);
     });
   });
 
@@ -98,6 +100,46 @@ void main() {
       for (final entry in session.board.pieces.entries) {
         expect(restored.board.getPieceAt(entry.key), entry.value);
       }
+    });
+  });
+
+  group('GameSession - Move history (replay support)', () {
+    Move sampleMove() => Move(
+          piece: Piece(
+            id: 'A-1',
+            side: PlayerSide.A,
+            seal: SealType.advance,
+            position: Position(column: 'a', row: 1),
+          ),
+          fromPosition: Position(column: 'a', row: 1),
+          toPosition: Position(column: 'a', row: 2),
+        );
+
+    test('copyWith appends to move history', () {
+      final session = GameSession.newSession(id: 's1', hostPlayerId: 'host-uid');
+      final updated = session.copyWith(moveHistory: [sampleMove()]);
+
+      expect(updated.moveHistory.length, 1);
+      expect(session.moveHistory, isEmpty); // 元のセッションは不変
+    });
+
+    test('Move history survives JSON round-trip', () {
+      final session = GameSession.newSession(id: 's1', hostPlayerId: 'host-uid')
+          .copyWith(moveHistory: [sampleMove(), sampleMove()]);
+
+      final restored = GameSession.fromJson(session.toJson());
+
+      expect(restored.moveHistory.length, 2);
+      expect(restored.moveHistory.first.type, MoveType.move);
+      expect(restored, session);
+    });
+
+    test('Missing moveHistory in JSON (old session data) defaults to empty', () {
+      final session = GameSession.newSession(id: 's1', hostPlayerId: 'host-uid');
+      final json = session.toJson()..remove('moveHistory');
+
+      final restored = GameSession.fromJson(json);
+      expect(restored.moveHistory, isEmpty);
     });
   });
 }

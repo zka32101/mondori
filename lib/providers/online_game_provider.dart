@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mondori/models/board.dart';
 import 'package:mondori/models/game_session.dart';
 import 'package:mondori/models/game_statistics.dart';
+import 'package:mondori/models/move.dart';
 import 'package:mondori/models/piece.dart';
 import 'package:mondori/providers/audio_provider.dart';
 import 'package:mondori/providers/statistics_provider.dart';
@@ -152,9 +153,8 @@ class OnlineGameNotifier extends StateNotifier<OnlineGameState> {
 
   /// オンライン対戦の結果を統計に記録
   ///
-  /// GameSession は現状、指し手履歴（moveHistory）を保持していないため、
-  /// リプレイは未対応（moveHistory: [] で記録）。TODO: Phase 2C-2 で
-  /// セッションに指し手履歴を追加し、オンライン対戦のリプレイに対応する。
+  /// GameSession が保持する moveHistory をそのまま使うため、AI 対戦と同じ
+  /// リプレイ画面でオンライン対戦も振り返れる。
   void _recordResult(GameSession session) {
     if (state.myPlayerId == null) return;
 
@@ -168,7 +168,7 @@ class OnlineGameNotifier extends StateNotifier<OnlineGameState> {
         milliseconds: session.updatedAt - session.createdAt,
       ),
       playedAt: DateTime.fromMillisecondsSinceEpoch(session.updatedAt),
-      moveHistory: const [],
+      moveHistory: session.moveHistory,
     );
 
     _ref.read(gameHistoryProvider.notifier).recordGameResult(stats);
@@ -186,19 +186,23 @@ class OnlineGameNotifier extends StateNotifier<OnlineGameState> {
     final targetPiece = session.board.getPieceAt(toPosition);
     Board newBoard;
     SoundEffect sound;
+    MoveType type;
 
     if (targetPiece == null) {
       if (!piece.getMovablePositions().contains(toPosition)) return;
       newBoard = session.board.movePiece(piece, toPosition);
       sound = SoundEffect.pieceMove;
+      type = MoveType.move;
     } else if (!piece.position.getAdjacentPositions().contains(toPosition)) {
       return;
     } else if (targetPiece.side != piece.side && targetPiece.seal != SealType.none) {
       newBoard = session.board.capturePiece(piece, targetPiece);
       sound = SoundEffect.capture;
+      type = MoveType.capture;
     } else if (targetPiece.side == piece.side && targetPiece.seal == SealType.none) {
       newBoard = session.board.convertPiece(piece, targetPiece);
       sound = SoundEffect.convert;
+      type = MoveType.convert;
     } else {
       return;
     }
@@ -207,12 +211,19 @@ class OnlineGameNotifier extends StateNotifier<OnlineGameState> {
 
     final nextPlayer =
         session.currentPlayer == PlayerSide.A ? PlayerSide.B : PlayerSide.A;
+    final move = Move(
+      piece: piece,
+      fromPosition: piece.position,
+      toPosition: toPosition,
+      type: type,
+    );
 
     await _service.submitMove(
       sessionId: session.id,
       newBoard: newBoard,
       nextPlayer: nextPlayer,
       moveCount: session.moveCount + 1,
+      moveHistory: [...session.moveHistory, move],
     );
 
     // 王の奪取をチェックして結果を記録

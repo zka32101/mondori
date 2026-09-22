@@ -1,6 +1,7 @@
 import 'package:firebase_database/firebase_database.dart';
 import 'package:mondori/models/board.dart';
 import 'package:mondori/models/game_session.dart';
+import 'package:mondori/models/move.dart';
 import 'package:mondori/models/piece.dart';
 import 'package:uuid/uuid.dart';
 
@@ -68,17 +69,23 @@ class OnlineGameService {
     });
   }
 
-  /// 移動を送信してボードとターンを更新
+  /// 移動を送信してボード・ターン・指し手履歴を更新
+  ///
+  /// [moveHistory] はこの手を反映した後の完全なリスト（既存履歴 + 今回の手）
+  /// を渡す。AI 対戦のリプレイと同じ仕組みでオンライン対戦もリプレイできる
+  /// ようにするため、Phase 2C 時点では未対応だった履歴保存に対応した。
   Future<void> submitMove({
     required String sessionId,
     required Board newBoard,
     required PlayerSide nextPlayer,
     required int moveCount,
+    required List<Move> moveHistory,
   }) async {
     await _sessionsRef.child(sessionId).update({
       'board': newBoard.toJson(),
       'currentPlayer': nextPlayer.name,
       'moveCount': moveCount,
+      'moveHistory': moveHistory.map((m) => m.toJson()).toList(),
       'updatedAt': DateTime.now().millisecondsSinceEpoch,
     });
   }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mondori/screens/game_mode_screen.dart';
 import 'package:mondori/screens/settings_screen.dart';
 import 'package:mondori/screens/statistics_screen.dart';
+import 'package:mondori/screens/tutorial_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -94,6 +95,26 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ),
                 child: const Text('ゲーム開始'),
+              ),
+              const SizedBox(height: 16),
+
+              // チュートリアルボタン（初心者向け）
+              OutlinedButton.icon(
+                icon: const Icon(Icons.school),
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const TutorialScreen(),
+                    ),
+                  );
+                },
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 32,
+                    vertical: 16,
+                  ),
+                ),
+                label: const Text('遊び方チュートリアル'),
               ),
               const SizedBox(height: 16),
 

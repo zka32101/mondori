@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:mondori/models/board.dart';
+import 'package:mondori/models/move.dart';
 import 'package:mondori/models/piece.dart';
 
 /// オンライン対戦セッションの状態
@@ -21,6 +22,7 @@ class GameSession extends Equatable {
   final int moveCount;
   final int createdAt; // epoch millis
   final int updatedAt; // epoch millis
+  final List<Move> moveHistory;
 
   const GameSession({
     required this.id,
@@ -31,6 +33,7 @@ class GameSession extends Equatable {
     required this.moveCount,
     required this.createdAt,
     required this.updatedAt,
+    this.moveHistory = const [],
     this.winner,
   });
 
@@ -60,6 +63,7 @@ class GameSession extends Equatable {
     PlayerSide? winner,
     int? moveCount,
     int? updatedAt,
+    List<Move>? moveHistory,
   }) {
     return GameSession(
       id: id,
@@ -71,6 +75,7 @@ class GameSession extends Equatable {
       moveCount: moveCount ?? this.moveCount,
       createdAt: createdAt,
       updatedAt: updatedAt ?? DateTime.now().millisecondsSinceEpoch,
+      moveHistory: moveHistory ?? this.moveHistory,
     );
   }
 
@@ -93,6 +98,7 @@ class GameSession extends Equatable {
         'moveCount': moveCount,
         'createdAt': createdAt,
         'updatedAt': updatedAt,
+        'moveHistory': moveHistory.map((m) => m.toJson()).toList(),
       };
 
   factory GameSession.fromJson(Map<String, dynamic> json) {
@@ -108,6 +114,13 @@ class GameSession extends Equatable {
       moveCount: json['moveCount'] as int,
       createdAt: json['createdAt'] as int,
       updatedAt: json['updatedAt'] as int,
+      // 旧バージョンのセッションデータには moveHistory が存在しないため、
+      // 無ければ空リストとして扱う（リプレイ不可の履歴として表示される）。
+      moveHistory: json['moveHistory'] != null
+          ? (json['moveHistory'] as List<dynamic>)
+              .map((m) => Move.fromJson(Map<String, dynamic>.from(m as Map)))
+              .toList()
+          : const [],
     );
   }
 
@@ -122,5 +135,6 @@ class GameSession extends Equatable {
         moveCount,
         createdAt,
         updatedAt,
+        moveHistory,
       ];
 }
