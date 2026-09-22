@@ -122,6 +122,31 @@ class OnlineGameNotifier extends StateNotifier<OnlineGameState> {
     }
   }
 
+  /// 招待コード対戦のホストとしてセッションを作成し、参加者を待つ
+  ///
+  /// 作成直後は playerIds が自分1人のみで status は waiting のまま。
+  /// 相手が [joinByCode] で参加すると status が active に変わり、
+  /// [_subscribeToSession] 経由で connectionStatus が connected になる
+  /// （UI 側は matchmaking と同じ ref.listen パターンで検知できる）。
+  Future<String?> hostGame(String playerId) async {
+    state = state.copyWith(
+      connectionStatus: OnlineConnectionStatus.matchmaking,
+      myPlayerId: playerId,
+    );
+
+    try {
+      final session = await _service.createSession(playerId);
+      _subscribeToSession(session.id);
+      return session.id;
+    } catch (e) {
+      state = state.copyWith(
+        connectionStatus: OnlineConnectionStatus.error,
+        errorMessage: e.toString(),
+      );
+      return null;
+    }
+  }
+
   void _subscribeToSession(String sessionId) {
     _sessionSubscription?.cancel();
     _resultRecorded = false;

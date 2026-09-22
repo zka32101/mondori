@@ -233,13 +233,17 @@ class _BoardWidgetState extends State<BoardWidget>
                                   child: Container(
                                     decoration: BoxDecoration(
                                       color: _getCellColor(
+                                        context,
                                         isSelected,
                                         isMovable,
                                         isCaptureable,
                                         isConvertible,
                                       ),
                                       border: Border.all(
-                                        color: Colors.grey.shade300,
+                                        color: Theme.of(context).brightness ==
+                                                Brightness.dark
+                                            ? Colors.grey.shade700
+                                            : Colors.grey.shade300,
                                       ),
                                     ),
                                     child: piece != null
@@ -266,22 +270,29 @@ class _BoardWidgetState extends State<BoardWidget>
     );
   }
 
+  /// セルの背景色。ダークテーマでは明るすぎる shade100/shade200 系だと
+  /// 盤面だけ浮いて見えるため、明度に応じて濃い shade に切り替える。
+  /// 既定色は白/黒固定ではなく [ColorScheme.surface] を使い、テーマの
+  /// シード色が変わっても追従するようにする。
   Color _getCellColor(
+    BuildContext context,
     bool isSelected,
     bool isMovable,
     bool isCaptureable,
     bool isConvertible,
   ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     if (isSelected) {
-      return Colors.blue.shade200;
+      return isDark ? Colors.blue.shade700 : Colors.blue.shade200;
     } else if (isMovable) {
-      return Colors.green.shade100;
+      return isDark ? Colors.green.shade900 : Colors.green.shade100;
     } else if (isCaptureable) {
-      return Colors.red.shade100;
+      return isDark ? Colors.red.shade900 : Colors.red.shade100;
     } else if (isConvertible) {
-      return Colors.amber.shade100;
+      return isDark ? Colors.amber.shade900 : Colors.amber.shade100;
     }
-    return Colors.white;
+    return Theme.of(context).colorScheme.surface;
   }
 }
 

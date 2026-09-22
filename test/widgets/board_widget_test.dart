@@ -444,5 +444,65 @@ void main() {
         expect(find.bySemanticsLabel('d3、相手の進、奪取可能'), findsOneWidget);
       });
     });
+
+    group('Dark mode adaptation', () {
+      Widget createThemedTestWidget({required Brightness brightness, required Board board}) {
+        return MaterialApp(
+          theme: ThemeData(
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: Colors.deepPurple,
+              brightness: brightness,
+            ),
+            useMaterial3: true,
+          ),
+          home: Scaffold(
+            body: Center(
+              child: BoardWidget(
+                board: board,
+                selectedPiece: null,
+                onPieceSelected: (_) {},
+                onPositionTapped: (_) {},
+              ),
+            ),
+          ),
+        );
+      }
+
+      Color? firstCellColor(WidgetTester tester) {
+        final containers = tester
+            .widgetList<Container>(find.descendant(
+              of: find.byType(GridView),
+              matching: find.byType(Container),
+            ))
+            .toList();
+        final decoration = containers.first.decoration as BoxDecoration?;
+        return decoration?.color;
+      }
+
+      testWidgets('Empty cells use a light-appropriate surface color in light mode',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(
+          createThemedTestWidget(brightness: Brightness.light, board: Board(pieces: {})),
+        );
+
+        final color = firstCellColor(tester);
+        expect(color, isNotNull);
+        // ライトテーマの surface は白に近い（明るい）はず
+        expect(color!.computeLuminance(), greaterThan(0.5));
+      });
+
+      testWidgets('Empty cells use a dark-appropriate surface color in dark mode',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(
+          createThemedTestWidget(brightness: Brightness.dark, board: Board(pieces: {})),
+        );
+
+        final color = firstCellColor(tester);
+        expect(color, isNotNull);
+        // ダークテーマの surface は黒に近い（暗い）はずで、白固定だった
+        // 頃の回帰を防ぐ。
+        expect(color!.computeLuminance(), lessThan(0.5));
+      });
+    });
   });
 }
