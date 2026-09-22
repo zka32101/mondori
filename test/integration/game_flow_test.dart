@@ -3,8 +3,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mondori/main.dart';
 import 'package:mondori/screens/game_screen.dart';
 import 'package:mondori/screens/home_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
   group('Game Flow Integration Tests', () {
     testWidgets('E2E: ホーム → ゲームモード選択 → ゲーム開始',
         (WidgetTester tester) async {

@@ -1,14 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mondori/screens/game_mode_screen.dart';
 import 'package:mondori/screens/game_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
   group('GameModeScreen', () {
     // ヘルパーメソッド: GameModeScreen をテストアプリにラップ
     Widget _createTestWidget() {
-      return const MaterialApp(
-        home: GameModeScreen(),
+      return const ProviderScope(
+        child: MaterialApp(
+          home: GameModeScreen(),
+        ),
       );
     }
 

@@ -10,6 +10,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
 
   # State management
   riverpod: ^2.4.0
@@ -30,6 +32,9 @@ dependencies:
   # Statistics & history persistence (Phase 2C)
   shared_preferences: ^2.2.0
 
+  # Audio (Phase 2D)
+  audioplayers: ^5.2.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -40,14 +45,11 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
+  # assets/images/, assets/rules/, and a bundled NotoSansJP font were
+  # declared here previously but the files never existed, which would
+  # break `flutter pub get` / build (Flutter requires a declared asset
+  # directory to exist, and font asset files to exist). Removed until
+  # real content is added; assets/sounds/ now has real generated SFX
+  # (Phase 2D) so it stays.
   assets:
-    - assets/images/
     - assets/sounds/
-    - assets/rules/
-
-  fonts:
-    - family: NotoSansJP
-      fonts:
-        - asset: assets/fonts/NotoSansJP-Regular.ttf
-        - asset: assets/fonts/NotoSansJP-Bold.ttf
-          weight: 700

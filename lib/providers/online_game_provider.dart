@@ -5,7 +5,9 @@ import 'package:mondori/models/board.dart';
 import 'package:mondori/models/game_session.dart';
 import 'package:mondori/models/game_statistics.dart';
 import 'package:mondori/models/piece.dart';
+import 'package:mondori/providers/audio_provider.dart';
 import 'package:mondori/providers/statistics_provider.dart';
+import 'package:mondori/services/audio_service.dart';
 import 'package:mondori/services/online_game_service.dart';
 import 'package:uuid/uuid.dart';
 
@@ -131,6 +133,11 @@ class OnlineGameNotifier extends StateNotifier<OnlineGameState> {
 
         if (session.status == GameSessionStatus.finished && !_resultRecorded) {
           _resultRecorded = true;
+          final iWon = state.myPlayerId != null &&
+              session.sideForPlayer(state.myPlayerId!) == session.winner;
+          _ref
+              .read(audioServiceProvider)
+              .playSound(iWon ? SoundEffect.gameWon : SoundEffect.gameOver);
           _recordResult(session);
         }
       },
@@ -178,19 +185,25 @@ class OnlineGameNotifier extends StateNotifier<OnlineGameState> {
 
     final targetPiece = session.board.getPieceAt(toPosition);
     Board newBoard;
+    SoundEffect sound;
 
     if (targetPiece == null) {
       if (!piece.getMovablePositions().contains(toPosition)) return;
       newBoard = session.board.movePiece(piece, toPosition);
+      sound = SoundEffect.pieceMove;
     } else if (!piece.position.getAdjacentPositions().contains(toPosition)) {
       return;
     } else if (targetPiece.side != piece.side && targetPiece.seal != SealType.none) {
       newBoard = session.board.capturePiece(piece, targetPiece);
+      sound = SoundEffect.capture;
     } else if (targetPiece.side == piece.side && targetPiece.seal == SealType.none) {
       newBoard = session.board.convertPiece(piece, targetPiece);
+      sound = SoundEffect.convert;
     } else {
       return;
     }
+
+    _ref.read(audioServiceProvider).playSound(sound);
 
     final nextPlayer =
         session.currentPlayer == PlayerSide.A ? PlayerSide.B : PlayerSide.A;

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mondori/screens/game_mode_screen.dart';
+import 'package:mondori/screens/settings_screen.dart';
 import 'package:mondori/screens/statistics_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -8,6 +9,24 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: const SizedBox.shrink(),
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            tooltip: '設定',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const SettingsScreen(),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),

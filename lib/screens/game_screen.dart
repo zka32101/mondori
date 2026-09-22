@@ -1,22 +1,25 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mondori/models/board.dart';
 import 'package:mondori/models/game_statistics.dart';
 import 'package:mondori/models/piece.dart';
+import 'package:mondori/providers/audio_provider.dart';
 import 'package:mondori/screens/pie_rule_dialog.dart';
+import 'package:mondori/services/audio_service.dart';
 import 'package:mondori/services/statistics_service.dart';
 import 'package:mondori/widgets/board_widget.dart';
 import 'package:uuid/uuid.dart';
 
-class GameScreen extends StatefulWidget {
+class GameScreen extends ConsumerStatefulWidget {
   const GameScreen({Key? key}) : super(key: key);
 
   @override
-  State<GameScreen> createState() => _GameScreenState();
+  ConsumerState<GameScreen> createState() => _GameScreenState();
 }
 
-class _GameScreenState extends State<GameScreen>
+class _GameScreenState extends ConsumerState<GameScreen>
     with SingleTickerProviderStateMixin {
   late Board board;
   late PlayerSide currentPlayer;
@@ -87,6 +90,7 @@ class _GameScreenState extends State<GameScreen>
       setState(() {
         selectedPiece = piece;
       });
+      ref.read(audioServiceProvider).playSound(SoundEffect.pieceTap);
     }
   }
 
@@ -107,6 +111,7 @@ class _GameScreenState extends State<GameScreen>
       _switchTurn();
       selectedPiece = null;
     });
+    ref.read(audioServiceProvider).playSound(SoundEffect.pieceMove);
 
     // パイルールチェック
     await _checkAndApplyPieRule();
@@ -137,6 +142,7 @@ class _GameScreenState extends State<GameScreen>
       _switchTurn();
       selectedPiece = null;
     });
+    ref.read(audioServiceProvider).playSound(SoundEffect.capture);
 
     // 敵の王が奪取されたか確認（勝者は駒を奪取した側であり、手番交代後の
     // currentPlayer ではない点に注意）
@@ -162,6 +168,7 @@ class _GameScreenState extends State<GameScreen>
       _switchTurn();
       selectedPiece = null;
     });
+    ref.read(audioServiceProvider).playSound(SoundEffect.convert);
   }
 
   void _switchTurn() {
@@ -174,6 +181,7 @@ class _GameScreenState extends State<GameScreen>
     if (moveCount != 1) return;
 
     pieModeResolved = true;
+    ref.read(audioServiceProvider).playSound(SoundEffect.pieRule);
 
     // パイルールダイアログを表示
     final switchSides = await showPieRuleDialog(context);
@@ -203,6 +211,7 @@ class _GameScreenState extends State<GameScreen>
 
   void _showGameOverDialog(PlayerSide winnerSide) {
     _recordGameResult(winnerSide);
+    ref.read(audioServiceProvider).playSound(SoundEffect.gameWon);
 
     final winner = winnerSide == PlayerSide.A ? 'A' : 'B';
     showDialog(

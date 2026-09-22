@@ -3,8 +3,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mondori/main.dart';
 import 'package:mondori/screens/game_screen.dart';
 import 'package:mondori/screens/home_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  setUp(() {
+    // MondoriApp は設定・統計・音声の各プロバイダが SharedPreferences に
+    // アクセスするため、テスト環境用にモック化する。
+    SharedPreferences.setMockInitialValues({});
+  });
+
   group('End-to-End Integration Tests', () {
     testWidgets('E2E: 完全なゲームセッション - ホーム→ゲーム→リセット→ホーム',
         (WidgetTester tester) async {

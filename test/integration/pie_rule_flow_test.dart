@@ -2,8 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mondori/main.dart';
 import 'package:mondori/screens/game_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
   group('Pie Rule Flow Integration Tests', () {
     testWidgets('E2E: パイルール - 初手実行後にダイアログが表示される',
         (WidgetTester tester) async {

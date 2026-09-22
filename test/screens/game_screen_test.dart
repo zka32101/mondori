@@ -1,15 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mondori/models/board.dart';
 import 'package:mondori/models/piece.dart';
 import 'package:mondori/screens/game_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  setUp(() {
+    // GameScreen は統計記録 (SharedPreferences) と効果音再生
+    // (Riverpod 経由の AudioService) を行うため、テスト環境用にモック化する。
+    SharedPreferences.setMockInitialValues({});
+  });
+
   group('GameScreen', () {
     // ヘルパーメソッド: GameScreen をテストアプリにラップ
     Widget _createTestWidget() {
-      return const MaterialApp(
-        home: GameScreen(),
+      return const ProviderScope(
+        child: MaterialApp(
+          home: GameScreen(),
+        ),
       );
     }
 

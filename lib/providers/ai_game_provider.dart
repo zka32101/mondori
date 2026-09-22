@@ -5,7 +5,9 @@ import 'package:mondori/models/board.dart';
 import 'package:mondori/models/game_statistics.dart';
 import 'package:mondori/models/move.dart';
 import 'package:mondori/models/piece.dart';
+import 'package:mondori/providers/audio_provider.dart';
 import 'package:mondori/providers/statistics_provider.dart';
+import 'package:mondori/services/audio_service.dart';
 import 'package:uuid/uuid.dart';
 
 /// AI ゲーム状態
@@ -171,6 +173,8 @@ class AIGameNotifier extends StateNotifier<AIGameState> {
       type: type,
     );
 
+    _playSoundForMoveType(type);
+
     // ゲーム終了状態をチェック
     final newState = state.copyWith(
       board: newBoard,
@@ -187,6 +191,16 @@ class AIGameNotifier extends StateNotifier<AIGameState> {
       // AI のターンを待つ
       _triggerAIMove();
     }
+  }
+
+  /// 手の種類に応じた効果音を再生
+  void _playSoundForMoveType(MoveType type) {
+    final effect = switch (type) {
+      MoveType.move => SoundEffect.pieceMove,
+      MoveType.capture => SoundEffect.capture,
+      MoveType.convert => SoundEffect.convert,
+    };
+    _ref.read(audioServiceProvider).playSound(effect);
   }
 
   /// AI が移動
@@ -241,6 +255,8 @@ class AIGameNotifier extends StateNotifier<AIGameState> {
         break;
     }
 
+    _playSoundForMoveType(bestMove.type);
+
     final nextPlayer = state.currentPlayer == PlayerSide.A ? PlayerSide.B : PlayerSide.A;
 
     final newState = state.copyWith(
@@ -269,6 +285,10 @@ class AIGameNotifier extends StateNotifier<AIGameState> {
     final winner = humanKingCaptured ? finishedState.aiPlayer : finishedState.humanPlayer;
 
     state = finishedState.copyWith(gameOver: true, winner: winner);
+
+    _ref.read(audioServiceProvider).playSound(
+          humanKingCaptured ? SoundEffect.gameOver : SoundEffect.gameWon,
+        );
 
     final stats = GameStatistics(
       gameId: _uuid.v4(),
