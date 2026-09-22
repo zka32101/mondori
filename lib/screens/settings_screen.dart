@@ -19,6 +19,7 @@ class SettingsScreen extends ConsumerWidget {
         title: Text(strings.settings),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
+          tooltip: '戻る',
           onPressed: () => Navigator.pop(context),
         ),
       ),

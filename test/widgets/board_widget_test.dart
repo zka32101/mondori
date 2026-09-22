@@ -309,5 +309,140 @@ void main() {
       expect(find.text('1'), findsWidgets);
       expect(find.text('6'), findsWidgets);
     });
+
+    group('Accessibility (Semantics)', () {
+      testWidgets('An empty cell exposes a semantics label describing its position',
+          (WidgetTester tester) async {
+        final handle = tester.ensureSemantics();
+        addTearDown(handle.dispose);
+
+        final board = Board(pieces: {});
+        await tester.pumpWidget(
+          _createTestWidget(
+            board: board,
+            selectedPiece: null,
+            onPieceSelected: () {},
+            onPositionTapped: () {},
+          ),
+        );
+
+        expect(find.bySemanticsLabel('c3、空きマス'), findsOneWidget);
+      });
+
+      testWidgets('An occupied cell exposes the owning side and seal type',
+          (WidgetTester tester) async {
+        final handle = tester.ensureSemantics();
+        addTearDown(handle.dispose);
+
+        final board = Board(pieces: {
+          Position(column: 'c', row: 3): Piece(
+            id: 'p1',
+            side: PlayerSide.A,
+            seal: SealType.king,
+            position: Position(column: 'c', row: 3),
+          ),
+          Position(column: 'd', row: 4): Piece(
+            id: 'p2',
+            side: PlayerSide.B,
+            seal: SealType.advance,
+            position: Position(column: 'd', row: 4),
+          ),
+        });
+
+        await tester.pumpWidget(
+          _createTestWidget(
+            board: board,
+            selectedPiece: null,
+            onPieceSelected: () {},
+            onPositionTapped: () {},
+          ),
+        );
+
+        expect(find.bySemanticsLabel('c3、自分の王'), findsOneWidget);
+        expect(find.bySemanticsLabel('d4、相手の進'), findsOneWidget);
+      });
+
+      testWidgets('A none-seal piece is announced distinctly from an active piece',
+          (WidgetTester tester) async {
+        final handle = tester.ensureSemantics();
+        addTearDown(handle.dispose);
+
+        final board = Board(pieces: {
+          Position(column: 'c', row: 3): Piece(
+            id: 'p1',
+            side: PlayerSide.A,
+            seal: SealType.none,
+            position: Position(column: 'c', row: 3),
+          ),
+        });
+
+        await tester.pumpWidget(
+          _createTestWidget(
+            board: board,
+            selectedPiece: null,
+            onPieceSelected: () {},
+            onPositionTapped: () {},
+          ),
+        );
+
+        expect(find.bySemanticsLabel('c3、自陣の無印駒'), findsOneWidget);
+      });
+
+      testWidgets('The selected piece cell includes "選択中" in its label',
+          (WidgetTester tester) async {
+        final handle = tester.ensureSemantics();
+        addTearDown(handle.dispose);
+
+        final piece = Piece(
+          id: 'p1',
+          side: PlayerSide.A,
+          seal: SealType.advance,
+          position: Position(column: 'c', row: 3),
+        );
+        final board = Board(pieces: {piece.position: piece});
+
+        await tester.pumpWidget(
+          _createTestWidget(
+            board: board,
+            selectedPiece: piece,
+            onPieceSelected: () {},
+            onPositionTapped: () {},
+          ),
+        );
+
+        expect(find.bySemanticsLabel('c3、自分の進、選択中'), findsOneWidget);
+      });
+
+      testWidgets('A capturable enemy cell includes "奪取可能" in its label',
+          (WidgetTester tester) async {
+        final handle = tester.ensureSemantics();
+        addTearDown(handle.dispose);
+
+        final selected = Piece(
+          id: 'p1',
+          side: PlayerSide.A,
+          seal: SealType.counter,
+          position: Position(column: 'c', row: 3),
+        );
+        final enemy = Piece(
+          id: 'p2',
+          side: PlayerSide.B,
+          seal: SealType.advance,
+          position: Position(column: 'd', row: 3),
+        );
+        final board = Board(pieces: {selected.position: selected, enemy.position: enemy});
+
+        await tester.pumpWidget(
+          _createTestWidget(
+            board: board,
+            selectedPiece: selected,
+            onPieceSelected: () {},
+            onPositionTapped: () {},
+          ),
+        );
+
+        expect(find.bySemanticsLabel('d3、相手の進、奪取可能'), findsOneWidget);
+      });
+    });
   });
 }

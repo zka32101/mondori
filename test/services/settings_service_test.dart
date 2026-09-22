@@ -77,4 +77,17 @@ void main() {
       expect(await service.getVolume(), 0.42);
     });
   });
+
+  group('SettingsService - Tutorial completion', () {
+    test('Defaults to false', () async {
+      final service = SettingsService();
+      expect(await service.getTutorialCompleted(), false);
+    });
+
+    test('Persists completion', () async {
+      final service = SettingsService();
+      await service.setTutorialCompleted(true);
+      expect(await service.getTutorialCompleted(), true);
+    });
+  });
 }

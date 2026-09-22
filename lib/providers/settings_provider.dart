@@ -10,6 +10,7 @@ class SettingsState {
   final bool musicEnabled;
   final double volume;
   final bool isLoaded;
+  final bool tutorialCompleted;
 
   const SettingsState({
     required this.themeMode,
@@ -18,6 +19,7 @@ class SettingsState {
     required this.musicEnabled,
     required this.volume,
     required this.isLoaded,
+    required this.tutorialCompleted,
   });
 
   factory SettingsState.initial() => const SettingsState(
@@ -27,6 +29,7 @@ class SettingsState {
         musicEnabled: true,
         volume: 0.8,
         isLoaded: false,
+        tutorialCompleted: false,
       );
 
   SettingsState copyWith({
@@ -37,6 +40,7 @@ class SettingsState {
     bool? musicEnabled,
     double? volume,
     bool? isLoaded,
+    bool? tutorialCompleted,
   }) {
     return SettingsState(
       themeMode: themeMode ?? this.themeMode,
@@ -46,6 +50,7 @@ class SettingsState {
       musicEnabled: musicEnabled ?? this.musicEnabled,
       volume: volume ?? this.volume,
       isLoaded: isLoaded ?? this.isLoaded,
+      tutorialCompleted: tutorialCompleted ?? this.tutorialCompleted,
     );
   }
 
@@ -83,6 +88,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     final soundEnabled = await _service.getSoundEnabled();
     final musicEnabled = await _service.getMusicEnabled();
     final volume = await _service.getVolume();
+    final tutorialCompleted = await _service.getTutorialCompleted();
 
     state = state.copyWith(
       themeMode: themeMode,
@@ -91,7 +97,13 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
       musicEnabled: musicEnabled,
       volume: volume,
       isLoaded: true,
+      tutorialCompleted: tutorialCompleted,
     );
+  }
+
+  Future<void> setTutorialCompleted(bool completed) async {
+    state = state.copyWith(tutorialCompleted: completed);
+    await _service.setTutorialCompleted(completed);
   }
 
   Future<void> setThemeMode(AppThemeMode mode) async {

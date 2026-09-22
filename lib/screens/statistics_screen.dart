@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mondori/ai/ai_engine.dart';
 import 'package:mondori/models/player_stats.dart';
 import 'package:mondori/providers/statistics_provider.dart';
+import 'package:mondori/screens/achievements_screen.dart';
 import 'package:mondori/screens/game_history_screen.dart';
 
 /// 個人成績ダッシュボード画面
@@ -19,9 +20,19 @@ class StatisticsScreen extends ConsumerWidget {
         title: const Text('統計・履歴'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
+          tooltip: '戻る',
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.emoji_events),
+            tooltip: '実績を見る',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const AchievementsScreen()),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.history),
             tooltip: '対戦履歴を見る',
@@ -75,6 +86,8 @@ class StatisticsScreen extends ConsumerWidget {
         children: [
           _buildSummaryCard(context, stats),
           const SizedBox(height: 16),
+          _buildAchievementsSummary(context, ref),
+          const SizedBox(height: 16),
           _buildDifficultyBreakdown(context, stats),
           const SizedBox(height: 16),
           OutlinedButton.icon(
@@ -83,6 +96,25 @@ class StatisticsScreen extends ConsumerWidget {
             onPressed: () => _confirmClearHistory(context, ref),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildAchievementsSummary(BuildContext context, WidgetRef ref) {
+    final achievements = ref.watch(achievementsProvider);
+    final unlockedCount = achievements.where((a) => a.unlocked).length;
+
+    return Card(
+      child: ListTile(
+        leading: const Icon(Icons.emoji_events, color: Colors.amber),
+        title: const Text('実績'),
+        subtitle: Text('$unlockedCount / ${achievements.length} 達成'),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const AchievementsScreen()),
+          );
+        },
       ),
     );
   }

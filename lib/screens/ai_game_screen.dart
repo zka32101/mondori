@@ -44,6 +44,7 @@ class _AIGameScreenState extends ConsumerState<AIGameScreen> {
         title: Text('AI対戦 (${widget.difficulty.label})'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
+          tooltip: '戻る',
           onPressed: () => Navigator.pop(context),
         ),
       ),

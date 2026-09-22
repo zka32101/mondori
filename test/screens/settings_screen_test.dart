@@ -58,11 +58,12 @@ void main() {
       expect(find.byType(Slider), findsOneWidget);
     });
 
-    testWidgets('Back button pops the screen', (tester) async {
+    testWidgets('Back button pops the screen and has an accessible tooltip', (tester) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
       expect(find.byIcon(Icons.arrow_back), findsOneWidget);
+      expect(find.byTooltip('戻る'), findsOneWidget);
     });
   });
 }

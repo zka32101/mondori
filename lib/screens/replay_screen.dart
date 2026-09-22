@@ -62,6 +62,7 @@ class _ReplayScreenState extends State<ReplayScreen> {
         title: const Text('リプレイ'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
+          tooltip: '戻る',
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -101,21 +102,25 @@ class _ReplayScreenState extends State<ReplayScreen> {
               children: [
                 IconButton(
                   icon: const Icon(Icons.first_page),
+                  tooltip: '最初の手に戻る',
                   onPressed: _currentStep > 0 ? () => setState(() => _currentStep = 0) : null,
                 ),
                 IconButton(
                   icon: const Icon(Icons.chevron_left),
+                  tooltip: '1手戻る',
                   onPressed:
                       _currentStep > 0 ? () => setState(() => _currentStep--) : null,
                 ),
                 IconButton(
                   icon: const Icon(Icons.chevron_right),
+                  tooltip: '1手進む',
                   onPressed: _currentStep < totalSteps
                       ? () => setState(() => _currentStep++)
                       : null,
                 ),
                 IconButton(
                   icon: const Icon(Icons.last_page),
+                  tooltip: '最後の手まで進む',
                   onPressed: _currentStep < totalSteps
                       ? () => setState(() => _currentStep = totalSteps)
                       : null,

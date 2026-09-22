@@ -18,6 +18,7 @@ class GameHistoryScreen extends ConsumerWidget {
         title: const Text('対戦履歴'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
+          tooltip: '戻る',
           onPressed: () => Navigator.pop(context),
         ),
       ),

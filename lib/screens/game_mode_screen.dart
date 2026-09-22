@@ -42,6 +42,7 @@ class GameModeScreen extends StatelessWidget {
         title: const Text('紋取り'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
+          tooltip: '戻る',
           onPressed: () => Navigator.pop(context),
         ),
       ),

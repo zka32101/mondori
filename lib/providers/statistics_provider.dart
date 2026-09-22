@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mondori/models/achievement.dart';
 import 'package:mondori/models/game_statistics.dart';
 import 'package:mondori/models/player_stats.dart';
+import 'package:mondori/providers/settings_provider.dart';
 import 'package:mondori/services/statistics_service.dart';
 
 final statisticsServiceProvider = Provider<StatisticsService>((ref) {
@@ -49,5 +51,24 @@ final playerStatsProvider = Provider<PlayerStats>((ref) {
     data: (data) => PlayerStats.fromHistory(data),
     loading: () => PlayerStats.empty(),
     error: (_, __) => PlayerStats.empty(),
+  );
+});
+
+/// 履歴・成績・チュートリアル完了状況から算出した実績一覧
+final achievementsProvider = Provider<List<AchievementProgress>>((ref) {
+  final historyAsync = ref.watch(gameHistoryProvider);
+  final stats = ref.watch(playerStatsProvider);
+  final tutorialCompleted = ref.watch(settingsProvider).tutorialCompleted;
+
+  final history = historyAsync.when(
+    data: (data) => data,
+    loading: () => const <GameStatistics>[],
+    error: (_, __) => const <GameStatistics>[],
+  );
+
+  return evaluateAchievements(
+    historyNewestFirst: history,
+    stats: stats,
+    tutorialCompleted: tutorialCompleted,
   );
 });

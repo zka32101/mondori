@@ -2,6 +2,50 @@ import 'package:flutter/material.dart';
 import 'package:mondori/models/board.dart';
 import 'package:mondori/models/piece.dart';
 
+/// スクリーンリーダー向けにセルの内容を説明するラベルを構築する。
+String _buildCellSemanticLabel({
+  required Position position,
+  required Piece? piece,
+  required bool isSelected,
+  required bool isMovable,
+  required bool isCaptureable,
+  required bool isConvertible,
+}) {
+  final buffer = StringBuffer('$position');
+
+  if (piece == null) {
+    buffer.write('、空きマス');
+  } else if (piece.seal == SealType.none) {
+    final sideLabel = piece.side == PlayerSide.A ? '自陣' : '相手陣';
+    buffer.write('、$sideLabel の無印駒');
+  } else {
+    final sideLabel = piece.side == PlayerSide.A ? '自分' : '相手';
+    buffer.write('、$sideLabel の${_sealSemanticName(piece.seal)}');
+  }
+
+  if (isSelected) buffer.write('、選択中');
+  if (isMovable) buffer.write('、移動可能');
+  if (isCaptureable) buffer.write('、奪取可能');
+  if (isConvertible) buffer.write('、教化可能');
+
+  return buffer.toString();
+}
+
+String _sealSemanticName(SealType seal) {
+  switch (seal) {
+    case SealType.advance:
+      return '進';
+    case SealType.swift:
+      return '早';
+    case SealType.counter:
+      return '対';
+    case SealType.king:
+      return '王';
+    case SealType.none:
+      return '無印駒';
+  }
+}
+
 class BoardWidget extends StatefulWidget {
   final Board board;
   final Piece? selectedPiece;
@@ -120,8 +164,8 @@ class _BoardWidgetState extends State<BoardWidget>
                               row: rowNum,
                             );
 
-                            final piece = board.getPieceAt(position);
-                            final isSelected = selectedPiece?.position == position;
+                            final piece = widget.board.getPieceAt(position);
+                            final isSelected = widget.selectedPiece?.position == position;
                             final isMovable = widget.selectedPiece != null &&
                                 widget.selectedPiece!.getMovablePositions()
                                     .contains(position) &&
@@ -140,48 +184,71 @@ class _BoardWidgetState extends State<BoardWidget>
                                 piece.side == widget.selectedPiece!.side &&
                                 piece.seal == SealType.none;
 
-                            return GestureDetector(
-                              onTap: () {
-                                // 有効な駒（無印以外）で、かつ「まだ何も選択していない」
-                                // か「自陣の別の駒を選び直す」場合のみ選択として扱う。
-                                // それ以外（空マス・無印駒・選択中に敵の有効駒をタップ）
-                                // は onPositionTapped に委譲し、移動/奪取/教化の判定は
-                                // 呼び出し側（各画面の onPositionTapped 実装）に任せる。
-                                // これにより敵駒への奪取アクションがタップで実行できる。
-                                final isSelectable =
-                                    piece != null && piece.seal != SealType.none;
-                                final isReselectingOwnPiece = isSelectable &&
-                                    widget.selectedPiece != null &&
-                                    piece.side == widget.selectedPiece!.side;
+                            void handleTap() {
+                              // 有効な駒（無印以外）で、かつ「まだ何も選択していない」
+                              // か「自陣の別の駒を選び直す」場合のみ選択として扱う。
+                              // それ以外（空マス・無印駒・選択中に敵の有効駒をタップ）
+                              // は onPositionTapped に委譲し、移動/奪取/教化の判定は
+                              // 呼び出し側（各画面の onPositionTapped 実装）に任せる。
+                              // これにより敵駒への奪取アクションがタップで実行できる。
+                              final isSelectable =
+                                  piece != null && piece.seal != SealType.none;
+                              final isReselectingOwnPiece = isSelectable &&
+                                  widget.selectedPiece != null &&
+                                  piece.side == widget.selectedPiece!.side;
 
-                                if (isSelectable &&
-                                    (widget.selectedPiece == null ||
-                                        isReselectingOwnPiece)) {
-                                  widget.onPieceSelected(piece);
-                                } else {
-                                  widget.onPositionTapped(position);
-                                }
-                              },
-                              child: ScaleTransition(
-                                scale: isMovable ? _pulseAnimation : AlwaysStoppedAnimation(1.0),
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color: _getCellColor(
-                                      isSelected,
-                                      isMovable,
-                                      isCaptureable,
-                                      isConvertible,
+                              if (isSelectable &&
+                                  (widget.selectedPiece == null ||
+                                      isReselectingOwnPiece)) {
+                                widget.onPieceSelected(piece);
+                              } else {
+                                widget.onPositionTapped(position);
+                              }
+                            }
+
+                            return Semantics(
+                              label: _buildCellSemanticLabel(
+                                position: position,
+                                piece: piece,
+                                isSelected: isSelected,
+                                isMovable: isMovable,
+                                isCaptureable: isCaptureable,
+                                isConvertible: isConvertible,
+                              ),
+                              button: true,
+                              selected: isSelected,
+                              // 子（_PieceWidget 内の刻印テキストなど）が持つ
+                              // 個別のセマンティクスを隠し、このセルのラベル1つに
+                              // まとめる（二重読み上げの防止）。
+                              excludeSemantics: true,
+                              // GestureDetector.onTap 単体はセマンティクスツリーに
+                              // タップ操作を公開しないため、スクリーンリーダーの
+                              // 「ダブルタップで実行」に対応させるには Semantics
+                              // 側にも同じ処理を渡す必要がある。
+                              onTap: handleTap,
+                              child: GestureDetector(
+                                onTap: handleTap,
+                                child: ScaleTransition(
+                                  scale: isMovable ? _pulseAnimation : AlwaysStoppedAnimation(1.0),
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: _getCellColor(
+                                        isSelected,
+                                        isMovable,
+                                        isCaptureable,
+                                        isConvertible,
+                                      ),
+                                      border: Border.all(
+                                        color: Colors.grey.shade300,
+                                      ),
                                     ),
-                                    border: Border.all(
-                                      color: Colors.grey.shade300,
-                                    ),
+                                    child: piece != null
+                                        ? _PieceWidget(
+                                      piece: piece,
+                                      isSelected: isSelected,
+                                    )
+                                        : null,
                                   ),
-                                  child: piece != null
-                                      ? _PieceWidget(
-                                    piece: piece,
-                                    isSelected: isSelected,
-                                  )
-                                      : null,
                                 ),
                               ),
                             );

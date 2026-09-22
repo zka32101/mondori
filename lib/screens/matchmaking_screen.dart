@@ -47,6 +47,7 @@ class _MatchmakingScreenState extends ConsumerState<MatchmakingScreen> {
         title: const Text('オンライン対戦'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
+          tooltip: '戻る',
           onPressed: () => Navigator.pop(context),
         ),
       ),

@@ -10,6 +10,7 @@ class SettingsService {
   static const _soundEnabledKey = 'mondori_sound_enabled';
   static const _musicEnabledKey = 'mondori_music_enabled';
   static const _volumeKey = 'mondori_volume';
+  static const _tutorialCompletedKey = 'mondori_tutorial_completed';
 
   Future<AppThemeMode> getThemeMode() async {
     final prefs = await SharedPreferences.getInstance();
@@ -69,5 +70,15 @@ class SettingsService {
   Future<void> setVolume(double volume) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setDouble(_volumeKey, volume.clamp(0.0, 1.0));
+  }
+
+  Future<bool> getTutorialCompleted() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_tutorialCompletedKey) ?? false;
+  }
+
+  Future<void> setTutorialCompleted(bool completed) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_tutorialCompletedKey, completed);
   }
 }

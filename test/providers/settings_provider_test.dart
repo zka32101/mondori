@@ -97,6 +97,18 @@ void main() {
     });
   });
 
+  group('SettingsProvider - Tutorial completion', () {
+    test('Defaults to false and can be marked complete', () async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      expect(container.read(settingsProvider).tutorialCompleted, false);
+
+      await container.read(settingsProvider.notifier).setTutorialCompleted(true);
+      expect(container.read(settingsProvider).tutorialCompleted, true);
+    });
+  });
+
   group('supportedLocalesProvider', () {
     test('Exposes the 4 supported locales', () {
       final container = ProviderContainer();

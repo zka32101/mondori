@@ -27,6 +27,7 @@ class _OnlineGameScreenState extends ConsumerState<OnlineGameScreen> {
         title: const Text('オンライン対戦'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
+          tooltip: '戻る',
           onPressed: () async {
             await ref.read(onlineGameStateProvider.notifier).leaveSession();
             if (context.mounted) Navigator.pop(context);

@@ -4,6 +4,7 @@ import 'package:mondori/models/board.dart';
 import 'package:mondori/models/move.dart';
 import 'package:mondori/models/piece.dart';
 import 'package:mondori/providers/audio_provider.dart';
+import 'package:mondori/providers/settings_provider.dart';
 import 'package:mondori/services/audio_service.dart';
 import 'package:mondori/widgets/board_widget.dart';
 
@@ -198,6 +199,7 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
         _selectedPiece = null;
       });
       ref.read(audioServiceProvider).playSound(SoundEffect.gameWon);
+      ref.read(settingsProvider.notifier).setTutorialCompleted(true);
       return;
     }
 
@@ -224,6 +226,7 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
         title: const Text('遊び方チュートリアル'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
+          tooltip: '戻る',
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
